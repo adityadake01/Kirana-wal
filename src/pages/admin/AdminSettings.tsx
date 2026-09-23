@@ -8,7 +8,6 @@ import { Settings, Save, Loader2 } from 'lucide-react';
 
 export default function AdminSettings() {
   const [logoUrl, setLogoUrl] = useState('');
-  const [enableGoogleLogin, setEnableGoogleLogin] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -41,7 +40,6 @@ export default function AdminSettings() {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           setLogoUrl(snap.data().logoUrl || '');
-          setEnableGoogleLogin(snap.data().enableGoogleLogin !== false);
         }
       } catch (err) {
         console.error(err);
@@ -57,8 +55,7 @@ export default function AdminSettings() {
     setMessage('');
     try {
       await setDoc(doc(db, 'settings', 'general'), {
-        logoUrl,
-        enableGoogleLogin
+        logoUrl
       }, { merge: true });
       setMessage('Settings saved successfully!');
       setTimeout(() => setMessage(''), 3000);
@@ -102,20 +99,6 @@ export default function AdminSettings() {
                <img src={logoUrl} alt="Logo Preview" className="h-12 object-contain bg-gray-50 rounded p-2 border" />
              </div>
           )}
-        </div>
-
-
-        <div className="pt-4 border-t border-gray-100">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={enableGoogleLogin} 
-              onChange={e => setEnableGoogleLogin(e.target.checked)} 
-              className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500"
-            />
-            <span className="text-sm font-medium text-gray-700">Enable Google Login</span>
-          </label>
-          <p className="text-xs text-gray-500 mt-1 ml-8">Allow users and sellers to register/login using their Google accounts.</p>
         </div>
 
         <div className="pt-6">

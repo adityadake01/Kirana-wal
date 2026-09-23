@@ -23,16 +23,16 @@ export default function MobileBottomNav() {
           <LayoutGrid className={`h-6 w-6 ${isActive('/categories') ? 'text-green-700' : ''}`} />
           <span className="text-[10px] font-medium">Categories</span>
         </Link>
-        <Link to="/shops" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive('/shops') ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
-          <Store className={`h-6 w-6 ${isActive('/shops') ? 'text-green-700' : ''}`} />
+        <Link to="/shops" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive('/categories') || isActive('/shops') ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
+          <Store className={`h-6 w-6 ${isActive('/shops') || isActive('/categories') ? 'text-green-700' : ''}`} />
           <span className="text-[10px] font-medium">Stores</span>
         </Link>
-        <Link to={user ? "/customer/orders" : "/login"} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive('/customer/orders') ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
-          <FileText className={`h-6 w-6 ${isActive('/customer/orders') ? 'text-green-700' : ''}`} />
+        <Link to={user ? "/dashboard?tab=orders" : "/login"} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname.startsWith('/dashboard') || isActive('/customer/orders') ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
+          <FileText className={`h-6 w-6 ${location.pathname.startsWith('/dashboard') ? 'text-green-700' : ''}`} />
           <span className="text-[10px] font-medium">Orders</span>
         </Link>
-        <Link to={user ? "/customer" : "/login"} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive('/customer') || isActive('/login') ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
-          <User className={`h-6 w-6 ${isActive('/customer') || isActive('/login') ? 'text-green-700' : ''}`} />
+        <Link to={user ? "/profile" : "/login"} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive('/profile') || isActive('/customer') || (!user && isActive('/login')) ? 'text-green-700 font-bold' : 'text-gray-500 hover:text-gray-900'}`}>
+          <User className={`h-6 w-6 ${isActive('/profile') || isActive('/customer') ? 'text-green-700' : ''}`} />
           <span className="text-[10px] font-medium">Account</span>
         </Link>
       </div>

@@ -32,6 +32,9 @@ export default function AdminSellerList() {
       const allSellers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSellers(allSellers);
       setLoading(false);
+    }, (err) => {
+      console.warn("Sellers snapshot error:", err);
+      setLoading(false);
     });
 
     return () => unsubscribe();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Calendar, Clock, Shield, Upload, Camera, Save, X, Edit, Bell } from 'lucide-react';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, addDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../../lib/firebase';
@@ -44,20 +44,30 @@ export default function AdminProfile() {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       const docRef = doc(db, 'users', user.uid);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const data = snap.data();
         setProfile(data);
-        setFormData({ name: data.name || '', phone: data.phone || '' });
+        setFormData({ name: data.name || user.displayName || '', phone: data.phone || '' });
         if (data.notificationPrefs) {
-          setNotificationPrefs({ ...notificationPrefs, ...data.notificationPrefs });
+          setNotificationPrefs(prev => ({ ...prev, ...data.notificationPrefs }));
         }
+      } else {
+        const fallback = { name: user.displayName || '', email: user.email || '', role: 'admin' };
+        setProfile(fallback);
+        setFormData({ name: user.displayName || '', phone: '' });
       }
     } catch (err) {
       console.error("Error fetching profile", err);
+      const fallback = { name: user.displayName || '', email: user.email || '', role: 'admin' };
+      setProfile(fallback);
+      setFormData({ name: user.displayName || '', phone: '' });
     } finally {
       setLoading(false);
     }
@@ -107,11 +117,11 @@ export default function AdminProfile() {
     setError('');
     setSuccess('');
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, 'users', user.uid), {
         name: formData.name,
         phone: formData.phone,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       await updateProfile(user, { displayName: formData.name });
       
       await addAuditLog('Profile Updated', 'user', user.uid, 'Updated profile information');
@@ -152,7 +162,7 @@ export default function AdminProfile() {
       if (err.code === 'auth/wrong-password') {
         setPasswordError('Incorrect current password.');
       } else {
-        setPasswordError('Failed to update password. You might have logged in with Google.');
+        setPasswordError('Failed to update password. Please check your current password and try again.');
       }
     }
   };
@@ -162,7 +172,7 @@ export default function AdminProfile() {
     const newPrefs = { ...notificationPrefs, [key]: !notificationPrefs[key] };
     setNotificationPrefs(newPrefs);
     try {
-      await updateDoc(doc(db, 'users', user.uid), { notificationPrefs: newPrefs });
+      await setDoc(doc(db, 'users', user.uid), { notificationPrefs: newPrefs }, { merge: true });
       await addAuditLog('Settings Updated', 'user', user.uid, 'Updated notification preferences');
     } catch (err) {
       console.error("Failed to update prefs", err);
@@ -172,7 +182,6 @@ export default function AdminProfile() {
   const addAuditLog = async (action: string, targetType: string, targetId: string, description: string) => {
     if (!user) return;
     try {
-      const { addDoc } = require('firebase/firestore');
       await addDoc(collection(db, 'auditLogs'), {
         userId: user.uid,
         role: 'admin',

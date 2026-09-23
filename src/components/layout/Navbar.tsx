@@ -1,293 +1,220 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, Search, Store, LogOut, X, Package, MapPin, Globe } from 'lucide-react';
+import { ShoppingCart, Store, LogOut, Package, Globe, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import { useNotificationStore } from '../../store/notificationStore';
-import { Bell } from 'lucide-react';
 import { auth } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
+import GlobalSearchBar from './GlobalSearchBar';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function Navbar() {
   const { user, role } = useAuthStore();
   const { logoUrl } = useSettingsStore();
-  const { unreadCount } = useNotificationStore();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [langDropdown, setLangDropdown] = useState(false);
-  const [currentLang, setCurrentLang] = useState('English');
+  const [currentLang, setCurrentLang] = useState('मराठी');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
+    setUserMenuOpen(false);
     await signOut(auth);
-    setIsMobileMenuOpen(false);
     navigate('/');
   };
 
   return (
-    <>
-      <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Desktop Logo */}
-            <div className="hidden md:flex items-center">
-              <Link to="/" className="flex items-center gap-2">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="h-8 max-w-[150px] object-contain" />
-                ) : (
-                  <>
-                    <Store className="h-8 w-8 text-green-700" />
-                    <span className="text-2xl font-bold text-gray-900 tracking-tight">
-                      <span className="text-green-700">Kirana</span>wala
-                    </span>
-                  </>
-                )}
-              </Link>
-            </div>
-
-            {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-2xl px-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Search for groceries, shops, or categories..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-
-            {/* Navigation Items */}
-            <div className="hidden md:flex items-center gap-6">
-              {/* Language Switcher */}
-              <div className="relative">
-                <button 
-                  onClick={() => setLangDropdown(!langDropdown)}
-                  className="flex items-center gap-1 text-gray-600 hover:text-emerald-600 font-medium transition-colors"
-                >
-                  <Globe className="h-4 w-4" /> {currentLang}
-                </button>
-                {langDropdown && (
-                  <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl py-2 z-50 border border-gray-100">
-                    {['English', 'मराठी', 'हिंदी'].map((l) => (
-                      <button 
-                        key={l}
-                        onClick={() => { setCurrentLang(l); setLangDropdown(false); }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
-                      >
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Link to="/shops" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
-                All Shops
-              </Link>
-              
-              
-              {role === 'admin' && (
-                <Link to="/admin" className="text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
-                  Admin Panel
-                </Link>
-              )}
-
-              {!user ? (
-                <>
-                  <Link to="/login" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
-                    Login
-                  </Link>
-                  <Link to="/register" className="bg-emerald-500 text-white px-5 py-2 rounded-full font-medium hover:bg-emerald-600 transition-colors shadow-sm">
-                    Sign Up
-                  </Link>
-                  <Link to="/register?role=shopkeeper" className="text-emerald-600 border border-emerald-500 px-5 py-2 rounded-full font-medium hover:bg-emerald-50 transition-colors">
-                    Become a Seller
-                  </Link>
-                </>
+    <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Main Header Row */}
+        <div className="flex items-center justify-between h-16 gap-3 sm:gap-6">
+          
+          {/* Brand Logo */}
+          <div className="flex items-center shrink-0">
+            <Link to="/" className="flex items-center gap-2">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-8 max-w-[140px] sm:max-w-[160px] object-contain" />
               ) : (
                 <>
-                  {role === 'customer' && (
-                    <Link to="/cart" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
-                      <ShoppingCart className="h-6 w-6" />
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-emerald-500 rounded-full">
-                        0
-                      </span>
-                    </Link>
-                  )}
-                  
-                  
-                  <Link to="/notifications" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
-                    <Bell className="h-6 w-6" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-orange-500 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                    {/* Live notification badge will be handled dynamically */}
-                  </Link>
-
-                  <div className="relative group">
-                    <button className="flex items-center gap-2 p-2 text-gray-600 hover:text-emerald-600 transition-colors">
-                      <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
-                        {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-                      </div>
-                    </button>
-                    
-                    {/* Dropdown menu */}
-                    <div className="absolute right-0 w-48 mt-2 bg-white rounded-lg shadow-xl py-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 border border-gray-100">
-                      <div className="px-4 py-2 border-b border-gray-100 mb-2">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.displayName || 'User'}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                      </div>
-                      
-                      {role === 'admin' && (
-                        <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600">
-                          Admin Dashboard
-                        </Link>
-                      )}
-                      {role === 'shopkeeper' && (
-                        <Link to="/shopkeeper" className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600">
-                          Shop Dashboard
-                        </Link>
-                      )}
-                      {role === 'customer' && (
-                        <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600">
-                          My Orders
-                        </Link>
-                      )}
-                      
-                      <button 
-                        onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 mt-1 border-t border-gray-100"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign out
-                      </button>
-                    </div>
-                  </div>
+                  <Store className="h-7 w-7 sm:h-8 sm:w-8 text-green-700" />
+                  <span className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    <span className="text-green-700">Kirana</span>wala
+                  </span>
                 </>
+              )}
+            </Link>
+          </div>
+
+          {/* Desktop Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-4">
+            <GlobalSearchBar />
+          </div>
+
+          {/* Right Navigation & Action Items */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            
+            {/* Language Switcher (Desktop) */}
+            <div className="relative hidden lg:block">
+              <button 
+                onClick={() => setLangDropdown(!langDropdown)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-emerald-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+              >
+                <Globe className="h-3.5 w-3.5" />
+                <span>{currentLang}</span>
+              </button>
+              {langDropdown && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl py-1 z-50 border border-gray-100">
+                  {['मराठी', 'English', 'हिंदी'].map((l) => (
+                    <button 
+                      key={l}
+                      onClick={() => { setCurrentLang(l); setLangDropdown(false); }}
+                      className="block w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Mobile layout */}
-            <div className="md:hidden flex items-center justify-between w-full">
-              <button 
-                onClick={() => setIsMobileMenuOpen(true)}
-                className="text-gray-800 hover:text-green-700 p-1"
+            {/* All Shops Link (Desktop) */}
+            <Link 
+              to="/shops" 
+              className="hidden sm:inline-flex text-sm font-semibold text-gray-700 hover:text-emerald-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              सर्व दुकाने (Shops)
+            </Link>
+            
+            {/* Admin Panel Direct Link */}
+            {role === 'admin' && (
+              <Link 
+                to="/admin" 
+                className="text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors"
               >
-                <Menu className="h-7 w-7" />
-              </button>
-              
-              <Link to="/" className="flex items-center gap-1">
-                <Store className="h-7 w-7 text-green-700" />
-                <span className="text-2xl font-bold text-gray-900 tracking-tight">
-                  <span className="text-green-700">Kirana</span>wala
-                </span>
+                Admin
               </Link>
+            )}
 
-              <div className="flex items-center gap-4">
-                <button className="relative text-gray-800 hover:text-green-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bell"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-orange-500 rounded-full border-2 border-white">
-                    3
-                  </span>
-                </button>
-                <Link to="/cart" className="text-gray-800 hover:text-green-700">
-                  <ShoppingCart className="h-6 w-6" />
+            {/* Notification Bell Dropdown (Click opens live notifications!) */}
+            <NotificationDropdown />
+
+            {/* Customer Cart */}
+            <Link 
+              to="/cart" 
+              className="p-2 text-gray-700 hover:text-emerald-600 rounded-full hover:bg-gray-100 transition-colors relative"
+              title="Cart"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-6 w-6" />
+            </Link>
+
+            {/* Auth Buttons / User Profile */}
+            {!user ? (
+              <div className="flex items-center gap-2">
+                <Link 
+                  to="/login" 
+                  className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-emerald-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  लॉगिन
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 rounded-full shadow-sm transition-colors"
+                >
+                  नोंदणी
                 </Link>
               </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Sidebar */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/50 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <div 
-            className="absolute top-0 right-0 h-full w-72 bg-white shadow-2xl flex flex-col transform transition-transform"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <span className="font-bold text-gray-900 flex items-center gap-2">
-                <Store className="h-5 w-5 text-emerald-500" />
-                Menu
-              </span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-gray-900 bg-white rounded-full shadow-sm">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto py-4">
-              {user && (
-                <div className="px-6 pb-6 mb-6 border-b border-gray-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-lg">
-                      {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">{user.displayName || 'User'}</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    </div>
+            ) : (
+              <div className="relative" ref={userMenuRef}>
+                <button 
+                  onClick={() => setUserMenuOpen(prev => !prev)}
+                  className="flex items-center gap-2 p-1 text-gray-600 hover:text-emerald-600 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                  aria-label="User Account"
+                >
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 font-bold text-sm shadow-sm">
+                    {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+                  </div>
+                </button>
+                
+                {/* User Dropdown menu */}
+                <div className={`absolute right-0 w-56 mt-2 bg-white rounded-2xl shadow-xl py-2 transition-all duration-150 border border-gray-100 z-50 ${
+                  userMenuOpen 
+                    ? 'opacity-100 scale-100 visible pointer-events-auto' 
+                    : 'opacity-0 scale-95 invisible pointer-events-none'
+                }`}>
+                  <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                    <p className="text-xs font-bold text-gray-900 truncate">{user.displayName || 'माझे खाते'}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+                    <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 capitalize">
+                      {role === 'admin' ? '🛡️ Admin' : role === 'shopkeeper' ? '🏪 Shopkeeper' : '👤 Customer'}
+                    </span>
                   </div>
                   
-                  {role === 'customer' && (
-                    <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
-                      <Package className="h-4 w-4" /> My Orders
+                  {role === 'admin' && (
+                    <Link 
+                      to="/admin" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    >
+                      ॲडमिन डॅशबोर्ड (Admin Panel)
                     </Link>
                   )}
                   {role === 'shopkeeper' && (
-                    <Link to="/shopkeeper" onClick={() => setIsMobileMenuOpen(false)} className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
-                      <Store className="h-4 w-4" /> Shop Dashboard
-                    </Link>
-                  )}
-                  {role === 'admin' && (
-                    <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
-                      <Store className="h-4 w-4" /> Admin Dashboard
-                    </Link>
-                  )}
-                </div>
-              )}
-              
-              <div className="px-4 space-y-1">
-                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 text-base font-medium text-gray-900 hover:bg-gray-50 rounded-lg">
-                  Home
-                </Link>
-                <Link to="/shops" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 text-base font-medium text-gray-900 hover:bg-gray-50 rounded-lg">
-                  All Shops
-                </Link>
-                
-                {!user && (
-                  <>
-                    <div className="my-4 border-t border-gray-100"></div>
-                    <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 text-base font-medium text-gray-900 hover:bg-gray-50 rounded-lg">
-                      Login
-                    </Link>
-                    <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 text-base font-medium text-emerald-600 bg-emerald-50 rounded-lg">
-                      Sign Up
-                    </Link>
-                    <Link to="/register?role=shopkeeper" onClick={() => setIsMobileMenuOpen(false)} className="block mt-2 px-4 py-3 text-base font-medium text-gray-700 border border-gray-200 rounded-lg">
-                      Register as Seller
-                    </Link>
-                  </>
-                )}
-                
-                {user && (
-                  <>
-                    <div className="my-4 border-t border-gray-100"></div>
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
+                    <Link 
+                      to="/shopkeeper" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
                     >
-                      <LogOut className="h-5 w-5" /> Sign out
-                    </button>
-                  </>
-                )}
+                      दुकान डॅशबोर्ड (Seller Panel)
+                    </Link>
+                  )}
+                  <Link 
+                    to="/dashboard?tab=orders" 
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2 text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                  >
+                    माझ्या ऑर्डर्स (My Orders)
+                  </Link>
+                  <Link 
+                    to="/profile" 
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2 text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                  >
+                    माझी प्रोफाईल (Profile)
+                  </Link>
+                  
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 mt-1 border-t border-gray-100 transition"
+                  >
+                    <LogOut className="h-3.5 w-3.5 mr-2" />
+                    लॉगआउट (Sign Out)
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
           </div>
+
         </div>
-      )}
-    </>
+
+        {/* Mobile Search Bar Row - Instant access on mobile screens */}
+        <div className="md:hidden pb-3 pt-1">
+          <GlobalSearchBar />
+        </div>
+
+      </div>
+    </header>
   );
 }

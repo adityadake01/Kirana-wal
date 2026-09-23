@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Calendar, Camera, Save, X, Edit, MapPin, Plus, Trash2 } from 'lucide-react';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc, updateDoc as updateDocRef } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../lib/firebase';
@@ -31,17 +31,27 @@ export default function CustomerProfile() {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       const docRef = doc(db, 'users', user.uid);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const data = snap.data();
         setProfile(data);
-        setFormData({ name: data.name || '', phone: data.phone || '' });
+        setFormData({ name: data.name || user.displayName || '', phone: data.phone || '' });
+      } else {
+        const fallback = { name: user.displayName || '', email: user.email || '', phone: '' };
+        setProfile(fallback);
+        setFormData({ name: user.displayName || '', phone: '' });
       }
     } catch (err) {
-      console.error(err);
+      console.warn("fetchProfile error:", err);
+      const fallback = { name: user.displayName || '', email: user.email || '', phone: '' };
+      setProfile(fallback);
+      setFormData({ name: user.displayName || '', phone: '' });
     } finally {
       setLoading(false);
     }
@@ -69,7 +79,7 @@ export default function CustomerProfile() {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       
-      await updateDoc(doc(db, 'users', user.uid), { photoURL: url });
+      await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
       await updateProfile(user, { photoURL: url });
       
       fetchProfile();
@@ -87,11 +97,12 @@ export default function CustomerProfile() {
     setError('');
     setSuccess('');
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, 'users', user.uid), {
         name: formData.name,
         phone: formData.phone,
+        email: user.email,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       await updateProfile(user, { displayName: formData.name });
       setEditMode(false);
       setSuccess('Profile updated successfully.');

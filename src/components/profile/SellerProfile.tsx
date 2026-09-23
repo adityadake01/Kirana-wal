@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, User, Mail, Phone, MapPin, Clock, Edit, X, Save, Image as ImageIcon, Camera, CheckCircle, ExternalLink } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../lib/firebase';
 import { useAuthStore } from '../../store/authStore';
@@ -65,15 +65,18 @@ export default function SellerProfile() {
       const storageRef = ref(storage, `shops/${user.uid}/${type}_${Date.now()}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
-      await updateDoc(doc(db, 'shops', user.uid), { [type === 'logo' ? 'shopImage' : 'shopBanner']: url });
+      await setDoc(doc(db, 'shops', user.uid), { [type === 'logo' ? 'shopImage' : 'shopBanner']: url }, { merge: true });
       
       // Audit log
-      const { addDoc, collection } = require('firebase/firestore');
-      await addDoc(collection(db, 'auditLogs'), {
-        userId: user.uid, role: 'shopkeeper', action: 'Store Information Updated',
-        targetType: 'shop', targetId: user.uid, description: `Updated shop ${type}`,
-        createdAt: new Date().toISOString()
-      });
+      try {
+        await addDoc(collection(db, 'auditLogs'), {
+          userId: user.uid, role: 'shopkeeper', action: 'Store Information Updated',
+          targetType: 'shop', targetId: user.uid, description: `Updated shop ${type}`,
+          createdAt: new Date().toISOString()
+        });
+      } catch (logErr) {
+        console.warn("Audit log error:", logErr);
+      }
       
       fetchData();
       setSuccess(`${type === 'logo' ? 'Logo' : 'Banner'} updated successfully.`);
@@ -91,25 +94,28 @@ export default function SellerProfile() {
     setError('');
     setSuccess('');
     try {
-      await updateDoc(doc(db, 'shops', user.uid), {
+      await setDoc(doc(db, 'shops', user.uid), {
         ...formData,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       
       // Sync phone and name to users collection too
-      await updateDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, 'users', user.uid), {
         name: formData.ownerName,
         phone: formData.phone,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       
       // Audit log
-      const { addDoc, collection } = require('firebase/firestore');
-      await addDoc(collection(db, 'auditLogs'), {
-        userId: user.uid, role: 'shopkeeper', action: 'Store Information Updated',
-        targetType: 'shop', targetId: user.uid, description: 'Updated store profile details',
-        createdAt: new Date().toISOString()
-      });
+      try {
+        await addDoc(collection(db, 'auditLogs'), {
+          userId: user.uid, role: 'shopkeeper', action: 'Store Information Updated',
+          targetType: 'shop', targetId: user.uid, description: 'Updated store profile details',
+          createdAt: new Date().toISOString()
+        });
+      } catch (logErr) {
+        console.warn("Audit log error:", logErr);
+      }
 
       setEditMode(false);
       setSuccess('Profile updated successfully.');

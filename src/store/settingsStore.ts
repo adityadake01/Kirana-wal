@@ -4,7 +4,6 @@ import { db } from '../lib/firebase';
 
 interface SettingsState {
   logoUrl: string;
-  enableGoogleLogin: boolean;
   loading: boolean;
   init: () => void;
 }
@@ -13,7 +12,6 @@ export const useSettingsStore = create<SettingsState>((set) => {
   let initialized = false;
   return {
     logoUrl: '',
-    enableGoogleLogin: true,
     loading: true,
     init: () => {
       if (initialized) return;
@@ -24,7 +22,6 @@ export const useSettingsStore = create<SettingsState>((set) => {
           const data = snap.data();
           set({
             logoUrl: data.logoUrl || '',
-            enableGoogleLogin: data.enableGoogleLogin !== false, // default true
             loading: false
           });
         } else {

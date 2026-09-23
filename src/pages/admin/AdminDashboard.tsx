@@ -43,6 +43,9 @@ export default function AdminDashboard() {
       const sellers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPendingSellers(sellers);
       setLoading(false);
+    }, (err) => {
+      console.warn("Pending sellers snapshot error:", err);
+      setLoading(false);
     });
 
     const fetchStats = async () => {

@@ -14,7 +14,6 @@ import { useNotificationStore } from './store/notificationStore';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
 import MobileBottomNav from './components/layout/MobileBottomNav';
 
 // Pages
@@ -31,9 +30,10 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import ShopkeeperDashboard from './pages/shopkeeper/ShopkeeperDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import PendingApproval from './pages/PendingApproval';
+import ProfilePage from './pages/ProfilePage';
 
 // Protected Route Wrapper
-function ProtectedRoute({ element, allowedRole }: { element: React.ReactNode, allowedRole: string }) {
+function ProtectedRoute({ element, allowedRole }: { element: React.ReactNode, allowedRole?: string }) {
   const { user, role, status, loading } = useAuthStore();
   
   if (loading) {
@@ -45,15 +45,15 @@ function ProtectedRoute({ element, allowedRole }: { element: React.ReactNode, al
   }
   
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   
-  if (role !== allowedRole && !(allowedRole === 'admin' && user.email?.trim().toLowerCase() === 'adityadake627@gmail.com')) {
-    return <Navigate to="/login" />;
+  if (allowedRole && role !== allowedRole && !(allowedRole === 'admin' && user.email?.trim().toLowerCase() === 'adityadake627@gmail.com')) {
+    return <Navigate to="/" replace />;
   }
 
   if (role === 'shopkeeper' && status === 'pending') {
-    return <Navigate to="/pending-approval" />;
+    return <Navigate to="/pending-approval" replace />;
   }
   
   return <>{element}</>;
@@ -105,6 +105,9 @@ export default function App() {
                } else {
                   setUser(firebaseUser, updatedRole, updatedStatus);
                }
+            }, (shopErr) => {
+               console.warn("Shop snapshot error:", shopErr);
+               setUser(firebaseUser, updatedRole, updatedStatus);
             });
             setLoading(false);
             return;
@@ -173,9 +176,15 @@ export default function App() {
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/notifications" element={<Notifications />} />
             
-            <Route path="/customer/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
-            <Route path="/seller/profile" element={<Navigate to="/shopkeeper?tab=settings" replace />} />
-            <Route path="/admin/profile" element={<Navigate to="/admin?tab=profile" replace />} />
+            {/* Unified Profile Route */}
+            <Route path="/profile" element={<ProtectedRoute element={<ProfilePage />} />} />
+            <Route path="/account" element={<Navigate to="/profile" replace />} />
+            <Route path="/customer" element={<Navigate to="/profile" replace />} />
+            <Route path="/customer/profile" element={<Navigate to="/profile" replace />} />
+            <Route path="/customer/orders" element={<Navigate to="/dashboard?tab=orders" replace />} />
+            <Route path="/categories" element={<Navigate to="/shops" replace />} />
+            <Route path="/seller/profile" element={<Navigate to="/profile" replace />} />
+            <Route path="/admin/profile" element={<Navigate to="/profile" replace />} />
             <Route path="/store/:sellerId" element={<Navigate to="/shop/:sellerId" replace />} />
             
             {/* Customer Routes */}
@@ -197,7 +206,6 @@ export default function App() {
             />
           </Routes>
         </main>
-        <Footer />
         <MobileBottomNav />
       </div>
     </Router>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Star, Clock, ChevronRight, Search, ChevronDown, BadgeCheck, Tag, Zap, ShieldCheck } from 'lucide-react';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import GlobalSearchBar from '../components/layout/GlobalSearchBar';
 
 const CATEGORIES = [
   { id: 1, name: 'Grocery', icon: '🧺' },
@@ -49,19 +50,9 @@ export default function Home() {
         <ChevronDown className="h-4 w-4 text-gray-500" />
       </div>
 
-      {/* Search Bar */}
+      {/* Global Search Bar */}
       <div className="px-4 py-4 md:max-w-7xl md:mx-auto md:w-full">
-        <div className="relative flex items-center w-full shadow-sm rounded-xl border border-gray-100 overflow-hidden bg-white">
-          <Search className="absolute left-3 text-gray-400 h-5 w-5" />
-          <input 
-            type="text" 
-            placeholder="Search for products, categories or stores..." 
-            className="w-full pl-10 pr-14 py-3.5 text-sm focus:outline-none text-gray-800"
-          />
-          <button className="absolute right-1 top-1 bottom-1 bg-green-800 text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-green-900 transition">
-            <Search className="h-5 w-5" />
-          </button>
-        </div>
+        <GlobalSearchBar />
       </div>
 
       {/* Promo Banner */}
